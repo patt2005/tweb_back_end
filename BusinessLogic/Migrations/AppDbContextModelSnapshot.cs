@@ -24,13 +24,19 @@ namespace Groz_Backend.Migrations
 
             modelBuilder.Entity("Domain.Entities.App.App", b =>
                 {
-                    b.Property<long>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<long?>("AppleSearchAdsId")
                         .HasColumnType("bigint");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
                     b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RevenueCatId")
                         .IsRequired()
                         .HasColumnType("text");
 

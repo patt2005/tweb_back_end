@@ -20,6 +20,14 @@ public class AppDbContext : DbContext
         optionsBuilder.UseNpgsql(_configuration.GetConnectionString("DefaultConnection"));
     }
 
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<App>(entity =>
+        {
+            entity.Property(e => e.Id).HasDefaultValueSql("gen_random_uuid()");
+        });
+    }
+
     public DbSet<User> Users { get; set; }
     public DbSet<AppUser> AppUsers { get; set; }
     public DbSet<App> Apps { get; set; }

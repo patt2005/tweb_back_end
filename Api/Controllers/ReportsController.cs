@@ -74,9 +74,12 @@ public class ReportsController : ControllerBase
         if ((end.Date - start.Date).TotalDays > 90)
             return BadRequest(new { message = "Date range must be at most 90 days for DAILY reports (Apple Search Ads limit)." });
 
+        if (request.AppleSearchAdsAppIds is not { Count: > 0 })
+            return BadRequest(new { message = "appleSearchAdsAppIds must include at least one id, and each id must exist on an app you own." });
+
         var trend = await _reportsService.GetPerformanceTrendsAsync(userId.Value, request, ct);
         if (trend == null)
-            return BadRequest(new { message = "Failed to fetch performance trends. Check Apple Search Ads credentials and request body." });
+            return BadRequest(new { message = "Failed to fetch performance trends. Check Apple Search Ads credentials, appleSearchAdsAppIds, and request body." });
 
         return Ok(trend);
     }

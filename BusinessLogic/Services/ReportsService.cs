@@ -91,8 +91,33 @@ public class ReportsService : IReportsService
         if (!TryParseReportDateRange(request.StartTime, request.EndTime, out var startUtc, out var endUtc))
             return null;
 
+        if (request.AppleSearchAdsAppIds is not { Count: > 0 })
+            return null;
+
+        var asaIdSet = request.AppleSearchAdsAppIds.Distinct().ToHashSet();
+        var appRows = await _db.Apps
+            .AsNoTracking()
+            .Where(a => a.UserId == userId && a.AppleSearchAdsId != null && asaIdSet.Contains(a.AppleSearchAdsId.Value))
+            .ToListAsync(ct);
+
+        foreach (var id in asaIdSet)
+        {
+            if (!appRows.Any(a => a.AppleSearchAdsId == id))
+                return null;
+        }
+
+        var revenueCatIds = appRows
+            .Select(a => a.RevenueCatId.Trim())
+            .Where(rc => rc.Length > 0)
+            .Distinct()
+            .ToHashSet(StringComparer.Ordinal);
+
         var timeZone = string.IsNullOrWhiteSpace(request.TimeZone) ? "UTC" : request.TimeZone;
         var rollupByDay = new Dictionary<string, DayRollup>(StringComparer.Ordinal);
+
+        var adamConditionValues = asaIdSet
+            .Select(id => id.ToString(CultureInfo.InvariantCulture))
+            .ToList();
 
         for (var offset = 0; ; offset += AppleCampaignReportPageSize)
         {
@@ -109,6 +134,15 @@ public class ReportsService : IReportsService
                     OrderBy = new List<CampaignReportOrderByDto>
                     {
                         new() { Field = "localSpend", SortOrder = "DESCENDING" }
+                    },
+                    Conditions = new List<CampaignReportConditionDto>
+                    {
+                        new()
+                        {
+                            Field = "adamId",
+                            Operator = "IN",
+                            Values = adamConditionValues
+                        }
                     },
                     Pagination = new CampaignReportPaginationDto { Offset = offset, Limit = AppleCampaignReportPageSize }
                 }
@@ -173,9 +207,15 @@ public class ReportsService : IReportsService
                 break;
         }
 
-        var dbAgg = await _db.AppUsers
+        var dbAggQuery = _db.AppUsers
             .AsNoTracking()
-            .Where(u => u.InstallDate >= startUtc && u.InstallDate <= endUtc)
+            .Where(u => u.InstallDate >= startUtc && u.InstallDate <= endUtc);
+
+        dbAggQuery = revenueCatIds.Count > 0
+            ? dbAggQuery.Where(u => revenueCatIds.Contains(u.AppId))
+            : dbAggQuery.Where(u => false);
+
+        var dbAgg = await dbAggQuery
             .GroupBy(u => u.InstallDate.Date)
             .Select(g => new { Day = g.Key, Revenue = g.Sum(u => u.TotalRevenue) })
             .ToListAsync(ct);
