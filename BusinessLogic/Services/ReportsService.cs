@@ -217,12 +217,21 @@ public class ReportsService : IReportsService
 
         var dbAgg = await dbAggQuery
             .GroupBy(u => u.InstallDate.Date)
-            .Select(g => new { Day = g.Key, Revenue = g.Sum(u => u.TotalRevenue) })
+            .Select(g => new
+            {
+                Day = g.Key,
+                Revenue = g.Sum(u => u.TotalRevenue),
+                PayingUserCount = g.Count(u => u.TotalRevenue > 0)
+            })
             .ToListAsync(ct);
 
         var revenueByDay = dbAgg.ToDictionary(
             x => x.Day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             x => x.Revenue);
+
+        var payingUsersByDay = dbAgg.ToDictionary(
+            x => x.Day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            x => x.PayingUserCount);
 
         var startDate = startUtc.Date;
         var endDate = endUtc.Date;
@@ -233,14 +242,16 @@ public class ReportsService : IReportsService
             var key = d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             rollupByDay.TryGetValue(key, out var rollup);
             revenueByDay.TryGetValue(key, out var revenue);
+            payingUsersByDay.TryGetValue(key, out var payingUserCount);
             if (firstCurrency == null && rollup?.Currency != null)
                 firstCurrency = rollup.Currency;
 
             var impressions = rollup?.Impressions ?? 0;
             var taps = rollup?.Taps ?? 0;
-            var installs = rollup?.Installs ?? 0;
+            var installs = (int)(rollup?.Installs ?? 0);
             var ttr = impressions > 0 ? (double)taps / impressions : 0;
             var cr = taps > 0 ? (double)installs / taps : 0;
+            var install2PaidConversionRate = installs > 0 ? (double)payingUserCount / installs * 100.0 : 0;
 
             var spend = rollup?.Spend ?? 0;
             var roas = spend > 0 ? (decimal)revenue / spend : 0;
@@ -252,7 +263,9 @@ public class ReportsService : IReportsService
                 Revenue = revenue,
                 Roas = roas,
                 Ttr = ttr,
-                Cr = cr
+                Cr = cr,
+                Installs = installs,
+                Install2PaidConversionRate = install2PaidConversionRate
             });
         }
 

@@ -12,10 +12,7 @@ public class PerformanceTrendsRequestDto
 
     [JsonPropertyName("timeZone")]
     public string? TimeZone { get; set; }
-
-    /// <summary>
-    /// Apple Search Ads app ids (Adam IDs). Must match app rows for the user; revenue uses the mapped RevenueCat app id on each app.
-    /// </summary>
+    
     [JsonPropertyName("appleSearchAdsAppIds")]
     public List<long>? AppleSearchAdsAppIds { get; set; }
 }
@@ -51,4 +48,10 @@ public class PerformanceTrendDayDto
 
     [JsonPropertyName("cr")]
     public double Cr { get; set; }
+
+    [JsonPropertyName("installs")]
+    public int Installs { get; set; }
+
+    [JsonPropertyName("install2PaidConversionRate")]
+    public double Install2PaidConversionRate { get; set; }
 }
