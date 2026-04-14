@@ -88,13 +88,20 @@ public class OnboardingService : IOnboardingService
 
         var revenueCatAppId = app.RevenueCatId.Trim();
 
+        var countryCodes = (request.CountryCodes ?? [])
+            .Where(c => !string.IsNullOrWhiteSpace(c))
+            .Select(c => c.Trim().ToUpperInvariant())
+            .Distinct()
+            .ToList();
+
         var aggregates = await _db.AppUsers
             .AsNoTracking()
             .Where(u =>
                 u.AppId == revenueCatAppId
                 && !string.IsNullOrWhiteSpace(u.OnboardingVariant)
                 && u.InstallDate >= startUtc
-                && u.InstallDate <= endUtc)
+                && u.InstallDate <= endUtc
+                && (countryCodes.Count == 0 || countryCodes.Contains(u.CountryCode.ToUpper())))
             .GroupBy(u => new { Date = u.InstallDate.Date, u.OnboardingVariant })
             .Select(g => new
             {

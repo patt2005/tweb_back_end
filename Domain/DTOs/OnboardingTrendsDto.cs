@@ -4,8 +4,13 @@ public class OnboardingTrendsRequestDto
 {
     public string StartDate { get; set; } = string.Empty;
     public string EndDate { get; set; } = string.Empty;
-    /// <summary>RevenueCat app id (must match an app on your account and AppUser.AppId from webhooks).</summary>
     public string AppId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// When non-empty, only users whose country code is in this list are included (case-insensitive).
+    /// When null or empty, no country filter is applied.
+    /// </summary>
+    public List<string>? CountryCodes { get; set; }
 }
 
 public class OnboardingTrendsResponseDto
