@@ -67,10 +67,10 @@ public class KeywordService : IKeywordService
                 if (!keywordId.HasValue || !adGroupId.HasValue)
                     continue;
 
-                var (revenue, userCount, trialsCount, payingUserCount) = await GetRevenueAndUserCountsForKeywordInRangeAsync(campaignId, keywordId.Value, adGroupId.Value, startUtc, endUtc, ct);
+                var (revenue, trialsCount, payingUserCount) = await GetRevenueAndUserCountsForKeywordInRangeAsync(campaignId, keywordId.Value, adGroupId.Value, startUtc, endUtc, ct);
                 row.Revenue = (decimal)revenue;
                 row.TrialsCount = trialsCount;
-                row.Arpu = userCount > 0 ? (decimal)revenue / userCount : 0;
+                row.Arpu = row.TotalInstalls > 0 ? (decimal)revenue / row.TotalInstalls : 0;
 
                 row.Trial2PaidConversionRate = trialsCount > 0 ? (double)payingUserCount / trialsCount * 100.0 : 0;
                 row.Install2TrialConversionRate = row.TotalInstalls > 0 ? (double)trialsCount / row.TotalInstalls * 100.0 : 0;
@@ -110,7 +110,7 @@ public class KeywordService : IKeywordService
         return true;
     }
 
-    private async Task<(double Revenue, int UserCount, int TrialsCount, int PayingUserCount)> GetRevenueAndUserCountsForKeywordInRangeAsync(long campaignId, long keywordId, long adGroupId, DateTime startUtc, DateTime endUtc, CancellationToken ct)
+    private async Task<(double Revenue, int TrialsCount, int PayingUserCount)> GetRevenueAndUserCountsForKeywordInRangeAsync(long campaignId, long keywordId, long adGroupId, DateTime startUtc, DateTime endUtc, CancellationToken ct)
     {
         var query = _db.AppUsers
             .AsNoTracking()
@@ -118,10 +118,9 @@ public class KeywordService : IKeywordService
                 && u.InstallDate >= startUtc && u.InstallDate <= endUtc);
 
         var revenue = await query.SumAsync(u => u.TotalRevenue, ct);
-        var userCount = await query.CountAsync(ct);
         var trialsCount = await query.CountAsync(u => u.HasTrial, ct);
         var payingUserCount = await query.CountAsync(u => u.TotalRevenue > 0, ct);
-        return (revenue, userCount, trialsCount, payingUserCount);
+        return (revenue, trialsCount, payingUserCount);
     }
 
     private static decimal? ParseAmount(string? amount)
