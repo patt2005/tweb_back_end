@@ -255,6 +255,7 @@ public class ReportsService : IReportsService
 
             var spend = rollup?.Spend ?? 0;
             var roas = spend > 0 ? (decimal)revenue / spend : 0;
+            var cpi = installs > 0 ? spend / installs : 0;
 
             days.Add(new PerformanceTrendDayDto
             {
@@ -265,7 +266,8 @@ public class ReportsService : IReportsService
                 Ttr = ttr,
                 Cr = cr,
                 Installs = installs,
-                Install2PaidConversionRate = install2PaidConversionRate
+                Install2PaidConversionRate = install2PaidConversionRate,
+                Cpi = cpi
             });
         }
 

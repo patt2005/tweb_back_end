@@ -54,4 +54,7 @@ public class PerformanceTrendDayDto
 
     [JsonPropertyName("install2PaidConversionRate")]
     public double Install2PaidConversionRate { get; set; }
+
+    [JsonPropertyName("cpi")]
+    public decimal Cpi { get; set; }
 }
